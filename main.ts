@@ -1,7 +1,5 @@
 import { App, Modal, Plugin, PluginSettingTab, Setting, TFile, TFolder } from 'obsidian';
 
-// Remember to rename these classes and interfaces!
-
 interface DailyNoteHelperSettings {
 	mySetting: string;
 }
@@ -46,22 +44,6 @@ export default class DailyNoteHelper extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-	}
-}
-
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
 	}
 }
 
