@@ -1,11 +1,13 @@
 import { App, Modal, Plugin, PluginSettingTab, Setting, TFile, TFolder } from 'obsidian';
 
 interface DailyNoteHelperSettings {
-	mySetting: string;
+	folder: string;
+	section: string;
 }
 
 const DEFAULT_SETTINGS: DailyNoteHelperSettings = {
-	mySetting: 'default'
+	folder: '',
+	section: ''
 }
 
 export default class DailyNoteHelper extends Plugin {
@@ -17,21 +19,27 @@ export default class DailyNoteHelper extends Plugin {
 		console.log(vault.getName());
 		this.app.workspace.onLayoutReady(() => {
 			vault.on('create', (newFile) => {
-				const folder = vault.getAbstractFileByPath("Daily Notes");
+				const folder = vault.getAbstractFileByPath(this.settings.folder);
 				if(folder !== null && folder instanceof TFolder && folder.children.contains(newFile) && folder.children.length > 1) {
 					vault.cachedRead(folder.children.at(folder.children.length-2) as TFile).then(contents => {
 						const checkboxRegex = /- \[ \] .*/;
 						const lines = contents.split('\n');
 						const uncheckedLines = lines.filter(line => {return checkboxRegex.test(line)}).join('\n').concat('\n');
-						vault.read(folder.children.at(folder.children.length-1) as TFile).then(contents => {
-							const first = contents.slice(0, contents.indexOf('## To Do')+9).concat(uncheckedLines);
-							const second = contents.slice(contents.indexOf('## To Do')+9, contents.length-1);
-							vault.modify(folder.children.at(folder.children.length-1) as TFile, first.concat(second));
-						})
+						if(this.settings.section.length === 0) {
+							vault.append(folder.children.at(folder.children.length-1) as TFile, uncheckedLines);
+						} else {
+							vault.read(folder.children.at(folder.children.length-1) as TFile).then(contents => {
+								const first = contents.slice(0, contents.indexOf(this.settings.section)+this.settings.section.length+1).concat(uncheckedLines);
+								const second = contents.slice(contents.indexOf(this.settings.section)+this.settings.section.length+1, contents.length-1);
+								vault.modify(folder.children.at(folder.children.length-1) as TFile, first.concat(second));
+							})
+						}
 					});
 				};
 			});
 		});
+
+		this.addSettingTab(new SampleSettingTab(this.app, this));
 	}
 
 	onunload() {
@@ -61,14 +69,22 @@ class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+			.setName('Daily Note Folder')
+			.setDesc('Folder which contains your daily notes')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+				.setValue(this.plugin.settings.folder)
 				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.folder = value;
 					await this.plugin.saveSettings();
 				}));
+		new Setting(containerEl)
+		.setName('Section to place tasks')
+		.setDesc('If you are using a daily note template, you can specify what section to place the tasks in')
+		.addText(text => text
+			.setValue(this.plugin.settings.section)
+			.onChange(async (value) => {
+				this.plugin.settings.section = value;
+				await this.plugin.saveSettings();
+			}));
 	}
 }
