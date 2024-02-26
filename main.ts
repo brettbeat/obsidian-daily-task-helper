@@ -21,25 +21,31 @@ export default class DailyNoteHelper extends Plugin {
 			vault.on('create', (newFile) => {
 				const folder = vault.getAbstractFileByPath(this.settings.folder);
 				if(folder !== null && folder instanceof TFolder && folder.children.contains(newFile) && folder.children.length > 1) {
-					vault.cachedRead(folder.children.at(folder.children.length-2) as TFile).then(contents => {
-						const checkboxRegex = /- \[ \] .*/;
-						const lines = contents.split('\n');
-						const uncheckedLines = lines.filter(line => {return checkboxRegex.test(line)}).join('\n').concat('\n');
-						if(this.settings.section.length === 0) {
-							vault.append(folder.children.at(folder.children.length-1) as TFile, uncheckedLines);
-						} else {
-							vault.read(folder.children.at(folder.children.length-1) as TFile).then(contents => {
-								const first = contents.slice(0, contents.indexOf(this.settings.section)+this.settings.section.length+1).concat(uncheckedLines);
-								const second = contents.slice(contents.indexOf(this.settings.section)+this.settings.section.length+1, contents.length-1);
-								vault.modify(folder.children.at(folder.children.length-1) as TFile, first.concat(second));
-							})
-						}
-					});
+					const previousDailyNote = folder.children.at(folder.children.length-2);
+					if(previousDailyNote instanceof TFile) {
+						vault.cachedRead(folder.children.at(folder.children.length-2) as TFile).then(contents => {
+							const checkboxRegex = /- \[ \] .*/;
+							const lines = contents.split('\n');
+							const uncheckedLines = lines.filter(line => {return checkboxRegex.test(line)}).join('\n').concat('\n');
+							const newDailyNote = folder.children.at(folder.children.length-1);
+							if(newDailyNote instanceof TFile) {
+								if(this.settings.section.length === 0) {
+									vault.append(newDailyNote, uncheckedLines);
+								} else {
+									vault.read(newDailyNote).then(contents => {
+										const first = contents.slice(0, contents.indexOf(this.settings.section)+this.settings.section.length+1).concat(uncheckedLines);
+										const second = contents.slice(contents.indexOf(this.settings.section)+this.settings.section.length+1, contents.length-1);
+										vault.modify(newDailyNote, first.concat(second));
+									})
+								}
+							}
+						});
+					}
 				};
 			});
 		});
 
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new DailyNoteSettingTab(this.app, this));
 	}
 
 	onunload() {
@@ -55,7 +61,7 @@ export default class DailyNoteHelper extends Plugin {
 	}
 }
 
-class SampleSettingTab extends PluginSettingTab {
+class DailyNoteSettingTab extends PluginSettingTab {
 	plugin: DailyNoteHelper;
 
 	constructor(app: App, plugin: DailyNoteHelper) {
