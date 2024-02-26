@@ -5,7 +5,7 @@
 	"minAppVersion": "0.15.0",
 	"description": "Automatically moves unchecked items from the previous Daily Note to today's Daily Note",
 	"author": "Brett Beattie",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"authorUrl": "https://github.com/brettbeat",
+	"fundingUrl": "https://github.com/brettbeat",
 	"isDesktopOnly": false
 }
